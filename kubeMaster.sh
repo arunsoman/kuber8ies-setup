@@ -135,17 +135,35 @@ EOF
 sudo systemctl daemon-reload
 sudo systemctl restart kubelet
 
+# Initialize Kubernetes control-plane node
+sudo kubeadm init --pod-network-cidr=10.244.0.0/16
+
+# Set up kubeconfig for the regular user
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+# Install a Pod network add-on (using Flannel as an example)
+kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+
+# Remove taint from master to allow scheduling pods on master node (optional, for single-node cluster)
+kubectl taint nodes --all node-role.kubernetes.io/control-plane- || true
+
 # Verify Docker and cri-dockerd status
 DOCKER_STATUS=$(sudo systemctl is-active docker)
 CRIDOCKER_STATUS=$(sudo systemctl is-active cri-docker.service)
+KUBELET_STATUS=$(sudo systemctl is-active kubelet)
 
 echo "Kubernetes components have been installed successfully."
 echo "Docker status: $DOCKER_STATUS"
 echo "cri-dockerd status: $CRIDOCKER_STATUS"
+echo "kubelet status: $KUBELET_STATUS"
 
 # Instructions for next steps
 echo "Next steps:"
-echo "1. Use kubeadm to create a Kubernetes cluster:"
-echo "   sudo kubeadm init --pod-network-cidr=<your-pod-network-cidr>"
-echo "2. Follow the instructions output by kubeadm init to set up your cluster."
-echo "3. Apply a network plugin to your cluster, such as Calico or Weave."
+echo "1. Use the following command to check the status of your cluster:"
+echo "   kubectl get nodes"
+echo "2. To add worker nodes, run the following join command on each worker node:"
+kubeadm token create --print-join-command
+
+echo "3. Your Kubernetes master node setup is complete. You can now join worker nodes using the command above."
