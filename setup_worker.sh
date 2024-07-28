@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Variables
-MASTER_NODE=<master-node-ip>  # Replace with the actual IP address of the master node
+MASTER_NODE=<first-master-node-ip>
 JOIN_COMMAND_FILE=/tmp/kubeadm_join_command.sh
 
-# Function to retrieve the join command from the master node
+# Function to retrieve the join command from the first control plane node
 get_join_command() {
   scp root@$MASTER_NODE:$JOIN_COMMAND_FILE .
   if [ -f ./kubeadm_join_command.sh ]; then
@@ -43,8 +43,6 @@ sudo systemctl enable --now kubelet
 
 # Disable swap
 sudo swapoff -a
-
-# Make swapoff permanent by commenting out swap entries in /etc/fstab
 sudo sed -i.bak '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
 
 # Verify that swap is disabled
